@@ -57,10 +57,12 @@ public class ContractService {
     return "wkhtmltopdf 已在 Docker 镜像安装，合同 " + id + " 可导出到 /tmp/contracts/" + id + ".pdf";
   }
 
-  public List<ContractExpiryVO> listExpiring() {
+  public List<ContractExpiryVO> listExpiring(Long userId, String status) {
     LocalDateTime now = LocalDateTime.now();
     LocalDateTime threshold = now.plusDays(30);
     return contracts.stream()
+      .filter(c -> (userId == null || c.getUserId().equals(userId)))
+      .filter(c -> (status == null || c.getStatus().equals(status)))
       .filter(c -> c.getExpireDate() != null)
       .filter(c -> !c.getExpireDate().isAfter(threshold))
       .map(c -> {
