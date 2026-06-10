@@ -1,8 +1,12 @@
 package com.contractapi.service;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import com.contractapi.constants.ContractStatus;
+import com.contractapi.dto.ContractExpiryVO;
 import com.contractapi.dto.GenerateContractRequest;
 import com.contractapi.entity.Contract;
 import com.contractapi.entity.ContractTemplate;
@@ -30,6 +34,8 @@ public class ContractService {
     contract.setContent(renderer.render(template.getContent(), request.variables()));
     contract.setStatus(ContractStatus.DRAFT.name());
     contract.setSigners("[]");
+    contract.setAmount(request.amount());
+    contract.setExpireDate(request.expireDate());
     contracts.add(contract);
     return contract;
   }
@@ -37,6 +43,9 @@ public class ContractService {
   public Contract updateStatus(Long id, ContractStatus status) {
     Contract contract = contracts.stream().filter(item -> item.getId().equals(id)).findFirst().orElseThrow();
     contract.setStatus(status.name());
+    if (status == ContractStatus.SIGNED) {
+      contract.setSignedAt(LocalDateTime.now());
+    }
     return contract;
   }
 
@@ -46,5 +55,19 @@ public class ContractService {
 
   public String exportPdf(Long id) {
     return "wkhtmltopdf 已在 Docker 镜像安装，合同 " + id + " 可导出到 /tmp/contracts/" + id + ".pdf";
+  }
+
+  public List<ContractExpiryVO> listExpiring() {
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime threshold = now.plusDays(30);
+    return contracts.stream()
+      .filter(c -> c.getExpireDate() != null)
+      .filter(c -> !c.getExpireDate().isAfter(threshold))
+      .map(c -> {
+        long days = ChronoUnit.DAYS.between(now, c.getExpireDate());
+        return ContractExpiryVO.from(c, days);
+      })
+      .sorted(Comparator.comparingLong(ContractExpiryVO::remainingDays))
+      .toList();
   }
 }

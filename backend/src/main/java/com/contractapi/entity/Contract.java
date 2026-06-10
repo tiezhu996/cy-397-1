@@ -1,6 +1,12 @@
 package com.contractapi.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.contractapi.constants.ContractStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 @TableName("contracts")
 public class Contract {
@@ -11,6 +17,14 @@ public class Contract {
   private String content;
   private String status;
   private String signers;
+
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private LocalDateTime signedAt;
+
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private LocalDateTime expireDate;
+
+  private BigDecimal amount;
 
   public Long getId() { return id; }
   public void setId(Long id) { this.id = id; }
@@ -26,4 +40,21 @@ public class Contract {
   public void setStatus(String status) { this.status = status; }
   public String getSigners() { return signers; }
   public void setSigners(String signers) { this.signers = signers; }
+  public LocalDateTime getSignedAt() { return signedAt; }
+  public void setSignedAt(LocalDateTime signedAt) { this.signedAt = signedAt; }
+  public LocalDateTime getExpireDate() { return expireDate; }
+  public void setExpireDate(LocalDateTime expireDate) { this.expireDate = expireDate; }
+  public BigDecimal getAmount() {
+    return amount != null ? amount.setScale(2, RoundingMode.HALF_UP) : null;
+  }
+  public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+  @JsonProperty("statusDisplay")
+  public String getStatusDisplay() {
+    try {
+      return ContractStatus.valueOf(status).getDisplay();
+    } catch (Exception e) {
+      return status;
+    }
+  }
 }
